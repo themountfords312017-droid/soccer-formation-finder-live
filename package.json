@@ -1,0 +1,10 @@
+{
+  "name": "soccer-formation-finder-api",
+  "version": "1.0.0",
+  "description": "Serverless backend for Soccer Formation Finder on Vercel",
+  "main": "api/create-checkout-session.js",
+  "type": "module",
+  "dependencies": {
+    "stripe": "^14.0.0"
+  }
+}

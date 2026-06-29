@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complete 4-5-1 Implementation Guide | Soccer Formation Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: hsl(220, 40%, 8%);
+    --navy-mid: hsl(220, 35%, 14%);
+    --navy-light: hsl(220, 30%, 20%);
+    --green: hsl(152, 70%, 42%);
+    --green-light: hsla(152, 70%, 42%, 0.10);
+    --green-border: hsla(152, 70%, 42%, 0.35);
+    --white: #ffffff;
+    --off-white: #f8f9fc;
+    --text: #1a1f36;
+    --text-mid: #3d4461;
+    --text-muted: #6b7394;
+    --border: #e2e6f0;
+    --heading: 'Outfit', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: var(--body);
+    color: var(--text);
+    background: var(--white);
+    line-height: 1.7;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ─── SCREEN BANNER ─────────────────────────────── */
+  .screen-banner {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--navy);
+    color: white;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    z-index: 9999;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    flex-wrap: wrap;
+  }
+  .screen-banner p { font-size: 13px; opacity: 0.85; }
+  .screen-banner strong { color: hsl(152,70%,60%); }
+  .save-btn {
+    background: hsl(152, 70%, 42%);
+    color: var(--navy);
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-family: var(--heading);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .save-btn:hover { background: hsl(152, 70%, 35%); }
+
+  /* ─── COVER PAGE ─────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 40px;
+    page-break-after: always;
+    break-after: page;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      repeating-linear-gradient(90deg, transparent, transparent 49px, hsla(220,40%,30%,0.18) 49px, hsla(220,40%,30%,0.18) 50px),
+      repeating-linear-gradient(0deg, transparent, transparent 49px, hsla(220,40%,30%,0.18) 49px, hsla(220,40%,30%,0.18) 50px);
+    pointer-events: none;
+  }
+  .cover-brand { font-family: var(--heading); font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: hsl(152, 70%, 55%); margin-bottom: 40px; position: relative; }
+  .cover-formation { font-family: var(--heading); font-size: 9rem; font-weight: 900; color: var(--white); line-height: 1; letter-spacing: -2px; margin-bottom: 16px; position: relative; }
+  .cover-title { font-family: var(--heading); font-size: 2rem; font-weight: 700; color: var(--white); margin-bottom: 12px; position: relative; }
+  .cover-shapes { font-family: var(--body); font-size: 13px; color: hsl(152, 70%, 55%); letter-spacing: 0.05em; margin-bottom: 48px; position: relative; }
+  .cover-divider { width: 60px; height: 3px; background: hsl(152, 70%, 42%); margin: 0 auto 40px; position: relative; border-radius: 2px; }
+  .cover-boxes { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 48px; position: relative; }
+  .cover-box { background: hsla(220, 30%, 20%, 0.7); border: 1px solid hsla(152, 70%, 42%, 0.3); border-radius: 10px; padding: 12px 20px; text-align: center; }
+  .cover-box-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: hsl(152, 70%, 55%); margin-bottom: 4px; font-weight: 600; }
+  .cover-box-value { font-family: var(--heading); font-size: 16px; font-weight: 700; color: var(--white); }
+  .cover-author { position: relative; border-top: 1px solid hsla(255,255,255,0.1); padding-top: 28px; color: hsla(255,255,255,0.6); font-size: 12px; line-height: 1.6; }
+  .cover-author strong { display: block; font-family: var(--heading); font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+
+  /* ─── TOC ────────────────────────────────────────── */
+  .toc-page { min-height: 100vh; padding: 60px 80px; page-break-after: always; break-after: page; }
+  .toc-header { background: var(--navy); color: var(--white); padding: 20px 32px; border-radius: 10px; margin-bottom: 40px; border-left: 5px solid hsl(152, 70%, 42%); }
+  .toc-header h2 { font-family: var(--heading); font-size: 1.5rem; font-weight: 800; }
+  .toc-header p { font-size: 13px; opacity: 0.6; margin-top: 4px; }
+  .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .toc-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px dotted var(--border); font-size: 14px; }
+  .toc-item:last-child { border-bottom: none; }
+  .toc-num { width: 28px; height: 28px; border-radius: 50%; background: var(--green-light); border: 1.5px solid var(--green-border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: hsl(152, 60%, 35%); flex-shrink: 0; font-family: var(--heading); }
+  .toc-title { flex: 1; font-weight: 500; color: var(--text); }
+
+  /* ─── SECTION PAGES ──────────────────────────────── */
+  .section-page { padding: 60px 80px; page-break-before: always; break-before: page; }
+  .section-heading { background: var(--navy); color: var(--white); padding: 24px 32px; border-radius: 12px; margin-bottom: 36px; border-left: 6px solid hsl(152, 70%, 42%); page-break-inside: avoid; break-inside: avoid; }
+  .section-heading .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: hsl(152, 70%, 55%); margin-bottom: 6px; }
+  .section-heading h2 { font-family: var(--heading); font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
+  .section-heading p { font-size: 13px; opacity: 0.65; margin-top: 6px; }
+  h3 { font-family: var(--heading); font-size: 1.1rem; font-weight: 700; color: var(--navy); margin: 28px 0 10px; page-break-after: avoid; break-after: avoid; }
+  h4 { font-family: var(--heading); font-size: 0.95rem; font-weight: 700; color: var(--navy-mid); margin: 20px 0 8px; page-break-after: avoid; break-after: avoid; }
+  p { margin-bottom: 14px; font-size: 14px; line-height: 1.75; color: var(--text); }
+  ul, ol { margin: 10px 0 18px 0; padding-left: 0; list-style: none; }
+  ul li, ol li { font-size: 14px; line-height: 1.65; color: var(--text); padding: 4px 0 4px 22px; position: relative; }
+  ul li::before { content: '•'; position: absolute; left: 6px; color: hsl(152, 65%, 38%); font-weight: 700; }
+  ol { counter-reset: item; }
+  ol li { counter-increment: item; }
+  ol li::before { content: counter(item) '.'; position: absolute; left: 2px; color: hsl(152, 65%, 38%); font-weight: 700; font-size: 13px; }
+
+  /* ─── CALLOUT BOXES ──────────────────────────────── */
+  .callout { background: var(--green-light); border-left: 4px solid hsl(152, 70%, 42%); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; page-break-inside: avoid; break-inside: avoid; }
+  .callout-title { font-family: var(--heading); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: hsl(152, 60%, 32%); margin-bottom: 8px; }
+  .callout p, .callout li { font-size: 13.5px; color: hsl(220, 30%, 22%); margin-bottom: 6px; }
+  .callout li::before { color: hsl(152, 60%, 38%); }
+
+  /* ─── QUOTE ──────────────────────────────────────── */
+  .quote { border-left: 4px solid hsl(152, 70%, 42%); padding: 14px 20px; margin: 20px 0; background: hsl(220, 30%, 97%); border-radius: 0 8px 8px 0; font-style: italic; font-size: 14px; color: var(--navy-mid); page-break-inside: avoid; break-inside: avoid; }
+
+  /* ─── CARD ───────────────────────────────────────── */
+  .card { border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin: 16px 0; page-break-inside: avoid; break-inside: avoid; }
+  .card-title { font-family: var(--heading); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--navy); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+  /* ─── SHAPE BOX ──────────────────────────────────── */
+  .shapes-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 24px 0; }
+  .shape-box { background: var(--navy); border-radius: 10px; padding: 20px; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+  .shape-box-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: hsl(152, 70%, 55%); margin-bottom: 8px; }
+  .shape-box-value { font-family: var(--heading); font-size: 1.6rem; font-weight: 900; color: var(--white); line-height: 1; margin-bottom: 6px; }
+  .shape-box-desc { font-size: 11px; color: hsla(255,255,255,0.55); line-height: 1.4; }
+
+  /* ─── PHILOSOPHY STRIP ───────────────────────────── */
+  .philosophy-strip { background: var(--navy); border-radius: 12px; padding: 24px 28px; margin: 24px 0; page-break-inside: avoid; break-inside: avoid; }
+  .philosophy-strip h4 { font-family: var(--heading); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: hsl(152, 70%, 55%); margin-bottom: 16px; }
+  .philosophy-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .philosophy-item { background: hsla(220, 30%, 22%, 0.8); border: 1px solid hsla(152, 70%, 42%, 0.2); border-radius: 8px; padding: 12px 14px; font-family: var(--heading); font-size: 12.5px; font-weight: 700; color: #ffffff; line-height: 1.4; }
+
+  /* ─── RULE BOX ───────────────────────────────────── */
+  .rule-box { background: var(--navy); border: 1px solid hsl(152, 70%, 30%); border-radius: 10px; padding: 18px 24px; margin: 20px 0; display: flex; align-items: flex-start; gap: 16px; page-break-inside: avoid; break-inside: avoid; }
+  .rule-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .rule-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: hsl(152, 70%, 55%); margin-bottom: 4px; }
+  .rule-text { font-family: var(--heading); font-size: 15px; font-weight: 700; color: var(--white); margin: 0; line-height: 1.4; }
+
+  /* ─── PROBLEM/FIX CARD ───────────────────────────── */
+  .problem-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; page-break-inside: avoid; break-inside: avoid; }
+  .problem-header { background: var(--navy); color: var(--white); padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+  .problem-num { background: hsl(152, 70%, 42%); color: var(--navy); width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; font-family: var(--heading); flex-shrink: 0; }
+  .problem-title { font-family: var(--heading); font-size: 15px; font-weight: 700; }
+  .problem-body { padding: 16px 20px; }
+  .problem-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin: 12px 0 6px; }
+  .problem-section-title:first-child { margin-top: 0; }
+
+  /* ─── ROLE GRID ──────────────────────────────────── */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+  .role-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; page-break-inside: avoid; break-inside: avoid; }
+  .role-name { font-family: var(--heading); font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .role-tag { background: var(--green-light); color: hsl(152, 60%, 32%); border: 1px solid var(--green-border); border-radius: 4px; font-size: 10px; padding: 1px 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+  .role-card h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 700; margin: 10px 0 4px; }
+  .role-card ul { margin: 0; }
+  .role-card li { font-size: 12.5px; padding: 2px 0 2px 18px; }
+
+  /* ─── ANCHOR CARD ────────────────────────────────── */
+  .anchor-card { background: var(--navy); border-radius: 12px; padding: 22px 26px; margin: 20px 0; page-break-inside: avoid; break-inside: avoid; }
+  .anchor-card .role-name { color: hsl(152, 70%, 60%); }
+  .anchor-card .role-tag { background: hsla(152,70%,42%,0.2); color: hsl(152, 70%, 65%); border-color: hsla(152,70%,42%,0.4); }
+  .anchor-card h4 { color: hsl(152, 50%, 55%); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin: 12px 0 5px; }
+  .anchor-card li { font-size: 12.5px; color: #ffffff; padding: 2px 0 2px 18px; }
+  .anchor-card li::before { color: hsl(152, 70%, 55%); }
+  .anchor-card p { font-size: 12px; color: hsla(255,255,255,0.6); margin: 10px 0 0; }
+
+  /* ─── SESSION CARD ───────────────────────────────── */
+  .session-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; page-break-inside: avoid; break-inside: avoid; }
+  .session-header { background: var(--navy); color: var(--white); padding: 14px 20px; }
+  .session-num { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: hsl(152, 70%, 55%); margin-bottom: 4px; }
+  .session-title { font-family: var(--heading); font-size: 16px; font-weight: 700; }
+  .session-body { padding: 16px 20px; }
+  .session-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin: 14px 0 5px; }
+  .session-label:first-child { margin-top: 0; }
+  .session-body p { font-size: 13.5px; margin-bottom: 8px; }
+  .session-body ul { margin: 4px 0 10px; }
+  .session-body li { font-size: 13px; padding: 2px 0 2px 18px; }
+  .session-link { background: var(--green-light); border-left: 3px solid hsl(152, 70%, 42%); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 14px; }
+  .session-link-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: hsl(152, 60%, 35%); margin-bottom: 3px; }
+  .session-link p { font-size: 13px; color: hsl(220, 30%, 28%); margin: 0; }
+
+  /* ─── CHECKLIST ──────────────────────────────────── */
+  .checklist li { padding: 8px 0 8px 28px; border-bottom: 1px solid hsl(220, 20%, 94%); font-size: 13.5px; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '□'; font-size: 16px; color: hsl(152, 65%, 38%); left: 4px; top: 6px; }
+
+  /* ─── SCRIPT BOX ─────────────────────────────────── */
+  .script-box { background: hsl(220, 30%, 97%); border: 1px solid var(--border); border-left: 4px solid hsl(152, 70%, 42%); border-radius: 0 10px 10px 0; padding: 16px 20px; margin: 16px 0; page-break-inside: avoid; break-inside: avoid; }
+  .script-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: hsl(152, 60%, 35%); margin-bottom: 8px; }
+  .script-text { font-style: italic; font-size: 14px; color: var(--navy-mid); line-height: 1.6; }
+
+  /* ─── HANDOUT SECTION ────────────────────────────── */
+  .handout { background: var(--off-white); border: 2px solid var(--navy); border-radius: 14px; padding: 32px; margin: 24px 0; }
+  .handout-title { font-family: var(--heading); font-size: 1.4rem; font-weight: 800; color: var(--navy); text-align: center; margin-bottom: 6px; }
+  .handout-sub { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 28px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .handout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .handout-block { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 16px; page-break-inside: avoid; break-inside: avoid; }
+  .handout-block h4 { font-family: var(--heading); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: hsl(152, 60%, 32%); margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--green-border); }
+  .handout-block ul { margin: 0; }
+  .handout-block li { font-size: 12.5px; padding: 3px 0 3px 18px; }
+
+  /* ─── NON-NEGOTIABLES — white text ───────────────── */
+  .non-negotiables { background: var(--navy); border-radius: 10px; padding: 20px; margin-top: 16px; page-break-inside: avoid; break-inside: avoid; }
+  .non-negotiables h4 { font-family: var(--heading); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: hsl(152, 70%, 55%); margin: 0 0 12px; }
+  .non-negotiables ul { margin: 0; }
+  .non-negotiables li { font-size: 12.5px; color: #ffffff; padding: 4px 0 4px 18px; }
+  .non-negotiables li::before { color: hsl(152, 70%, 55%); }
+
+  /* ─── ROLE TABLE ─────────────────────────────────── */
+  .role-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  .role-table th { background: var(--navy); color: var(--white); padding: 10px 14px; text-align: left; font-family: var(--heading); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+  .role-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .role-table tr:last-child td { border-bottom: none; }
+  .role-table tr:nth-child(even) td { background: hsl(220, 25%, 97%); }
+  .role-table .role-col { font-weight: 700; color: var(--navy); white-space: nowrap; width: 22%; }
+
+  /* ─── FINAL MESSAGE ──────────────────────────────── */
+  .final-message { background: var(--navy); color: var(--white); border-radius: 14px; padding: 40px; margin: 30px 0; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+  .final-message h2 { font-family: var(--heading); font-size: 1.75rem; font-weight: 800; margin-bottom: 20px; color: var(--white); }
+  .final-message p { font-size: 14px; opacity: 0.8; color: var(--white); max-width: 540px; margin: 0 auto 10px; line-height: 1.7; }
+  .final-principles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 28px 0; }
+  .final-principle { background: hsla(220, 30%, 22%, 0.8); border: 1px solid hsla(152, 70%, 42%, 0.25); border-radius: 8px; padding: 14px; font-family: var(--heading); font-size: 13px; font-weight: 700; color: hsl(152, 70%, 60%); line-height: 1.4; }
+  .final-brand { font-size: 12px; opacity: 0.4; margin-top: 24px; color: var(--white); }
+
+  /* ─── PRINT ──────────────────────────────────────── */
+  @page { margin: 18mm 18mm 22mm 18mm; size: A4; @bottom-center { content: "Soccer Formation Finder  |  Team Tactical Blueprint"; font-size: 8pt; color: #888; } @bottom-right { content: counter(page); font-size: 8pt; color: #888; } }
+  @page :first { margin: 0; @bottom-center { content: ''; } @bottom-right { content: ''; } }
+
+  @media print {
+    .screen-banner { display: none !important; }
+    body { font-size: 11pt; }
+    p { font-size: 11pt; }
+    ul li, ol li { font-size: 11pt; }
+    h3 { font-size: 13pt; margin-top: 18pt; }
+    h4 { font-size: 11pt; }
+    .cover-formation { font-size: 7rem; }
+    .cover-title { font-size: 1.6rem; }
+    .section-page { padding: 0; page-break-before: always; break-before: page; }
+    .toc-page { padding: 0; }
+    .role-card, .anchor-card, .session-card, .problem-card, .handout { page-break-inside: avoid; break-inside: avoid; }
+    h3, h4 { page-break-after: avoid; break-after: avoid; }
+  }
+
+  @media screen {
+    body { max-width: 900px; margin: 0 auto; padding: 0 24px 120px; }
+    .toc-page, .section-page { padding: 40px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SCREEN BANNER -->
+<div class="screen-banner">
+  <p>⚽ <strong>Complete 4-5-1 Implementation Guide</strong> — To save as PDF: click the button → choose <strong>Save as PDF</strong> as the printer.</p>
+  <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
+</div>
+
+<!-- ═══ COVER PAGE ═══════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-brand">⚽ Soccer Formation Finder</div>
+  <div class="cover-formation">4-5-1</div>
+  <div class="cover-title">Complete Implementation Guide</div>
+  <div class="cover-shapes">Default Shape · Attacking Shape · Defensive Shape · Transitions · Training Plan</div>
+  <div class="cover-divider"></div>
+  <div class="cover-boxes">
+    <div class="cover-box">
+      <div class="cover-box-label">Default</div>
+      <div class="cover-box-value">4-5-1</div>
+    </div>
+    <div class="cover-box">
+      <div class="cover-box-label">Attack</div>
+      <div class="cover-box-value">3-2-5</div>
+    </div>
+    <div class="cover-box">
+      <div class="cover-box-label">Defend</div>
+      <div class="cover-box-value">Mid-Block</div>
+    </div>
+  </div>
+  <div class="cover-author">
+    <strong>Paul Mountford</strong>
+    UEFA Licensed Coach | Head of Women's Football — University of Lancashire<br>
+    A practical guide for grassroots and amateur soccer coaches
+  </div>
+</div>
+
+<!-- ═══ TABLE OF CONTENTS ════════════════════════════════ -->
+<div class="toc-page">
+  <div class="toc-header">
+    <h2>Table of Contents</h2>
+    <p>Complete 4-5-1 Implementation Guide</p>
+  </div>
+  <ul class="toc-list">
+    <li class="toc-item"><span class="toc-num">In</span><span class="toc-title">Introduction — The 4-5-1 Philosophy</span></li>
+    <li class="toc-item"><span class="toc-num">☆</span><span class="toc-title">System at a Glance — Default · Attack · Defend · Transitions</span></li>
+    <li class="toc-item"><span class="toc-num">1</span><span class="toc-title">Formation Overview — Best For · Avoid If · Strengths · Risks</span></li>
+    <li class="toc-item"><span class="toc-num">2</span><span class="toc-title">Default Shape — Starting Structure · Units · Distances</span></li>
+    <li class="toc-item"><span class="toc-num">3</span><span class="toc-title">Attacking Shape — 3-2-5 · 4-3-3 Transition · Five Threats · Rest Defense</span></li>
+    <li class="toc-item"><span class="toc-num">4</span><span class="toc-title">Defensive Shape — 4-5-1 Mid-Block · Unit Roles · Triggers</span></li>
+    <li class="toc-item"><span class="toc-num">5</span><span class="toc-title">Transitions — Counter-Press · 6–8 Second Rule · Attacking Transition</span></li>
+    <li class="toc-item"><span class="toc-num">6</span><span class="toc-title">Key Player Roles — All 7 Positions Across All Phases</span></li>
+    <li class="toc-item"><span class="toc-num">7</span><span class="toc-title">Training Routine — 5 Sessions Connected to the System</span></li>
+    <li class="toc-item"><span class="toc-num">8</span><span class="toc-title">Match-Day Checklist — Before · During · Half-Time · After</span></li>
+    <li class="toc-item"><span class="toc-num">9</span><span class="toc-title">Common Problems and Fixes — 7 Problems with Solutions</span></li>
+    <li class="toc-item"><span class="toc-num">10</span><span class="toc-title">Coach Scripts — Ready-to-Use Explanations for Players</span></li>
+    <li class="toc-item"><span class="toc-num">11</span><span class="toc-title">Printable Player Handout — Team System on One Page</span></li>
+    <li class="toc-item"><span class="toc-num">✓</span><span class="toc-title">Final Coaching Message</span></li>
+  </ul>
+</div>
+
+<!-- ═══ INTRODUCTION ════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Introduction</div>
+    <h2>How to Get the Most From This Guide</h2>
+    <p>A practical tactical guide for grassroots and amateur soccer coaches</p>
+  </div>
+
+  <p>The 4-5-1 is one of the most disciplined and reliable formations in soccer. It is often misunderstood as a negative or defensive system. That is not the right way to view it. A poor 4-5-1 can become passive, deep, and isolated. A well-coached 4-5-1 can be compact, aggressive, organized, hard to play through, and dangerous in transition.</p>
+
+  <p>The 4-5-1 gives the team:</p>
+  <ul>
+    <li>A back four</li>
+    <li>Five midfielders</li>
+    <li>One striker</li>
+    <li>Strong central protection</li>
+    <li>Natural wide cover</li>
+    <li>Compact defensive distances</li>
+    <li>Good protection against stronger opponents</li>
+    <li>A clear counterattacking structure</li>
+    <li>A safe platform to build from</li>
+    <li>A simple shape players can recover into</li>
+  </ul>
+
+  <p>This formation is especially useful for teams that concede too many goals, get played through midfield, struggle with counterattacks, or need a clearer defensive identity. The biggest strength of the 4-5-1 is the midfield line. With five players across midfield, the team can protect central spaces, shift across the field, force play wide, and stop opponents from playing easily between the lines.</p>
+
+  <p>The biggest risk is the lone striker becoming isolated. If the midfield does not support quickly, the team may defend well but struggle to attack. So this guide will not teach the 4-5-1 as a low block with no ambition. It will teach it as a compact, disciplined structure that can defend with control, counter-press when possible, and attack with clear support.</p>
+
+  <div class="philosophy-strip">
+    <h4>The Philosophy</h4>
+    <div class="philosophy-grid">
+      <div class="philosophy-item">Be compact without the ball</div>
+      <div class="philosophy-item">Be brave when you win it</div>
+      <div class="philosophy-item">Support the striker quickly</div>
+      <div class="philosophy-item">Attack with purpose</div>
+      <div class="philosophy-item">Protect the middle</div>
+      <div class="philosophy-item">React immediately when possession changes</div>
+    </div>
+  </div>
+
+  <p>This is a structure-first system with intensity built into it.</p>
+</div>
+
+<!-- ═══ SYSTEM AT A GLANCE ═══════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">System at a Glance</div>
+    <h2>The Three Shapes and Two Transition Rules</h2>
+  </div>
+
+  <div class="shapes-grid">
+    <div class="shape-box">
+      <div class="shape-box-label">Default</div>
+      <div class="shape-box-value">4-5-1</div>
+      <div class="shape-box-desc">GK · Back 4 · Midfield 5 · 1 Striker</div>
+    </div>
+    <div class="shape-box">
+      <div class="shape-box-label">Attacking</div>
+      <div class="shape-box-value">3-2-5</div>
+      <div class="shape-box-desc">Recommended. 4-3-3 in fast transition. Rest defense maintained.</div>
+    </div>
+    <div class="shape-box">
+      <div class="shape-box-label">Defending</div>
+      <div class="shape-box-value">Mid-Block</div>
+      <div class="shape-box-desc">Compact 4-5-1 · Midfield 5 screens · Back 4 connected</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Midfield Five Configurations</div>
+    <p>For most grassroots and amateur teams, the recommended version is: <strong>one holding midfielder + two central midfielders + two wide midfielders</strong>. This gives protection and still allows midfield runners to support attacks. Other options: two holding midfielders and one No10 (more defensive), or three flat CMs (risky if wide areas are exposed).</p>
+  </div>
+
+  <div class="rule-box">
+    <div class="rule-icon">⚡</div>
+    <div>
+      <div class="rule-label">Transition Rule — When We Lose It</div>
+      <div class="rule-text">Counter-press for 6–8 seconds if close enough. The nearest midfielder presses, the next covers, and the rest of the midfield protects central space. If cannot win it, recover into the 4-5-1 mid-block.</div>
+    </div>
+  </div>
+
+  <div class="rule-box">
+    <div class="rule-icon">🚀</div>
+    <div>
+      <div class="rule-label">Transition Rule — When We Win It</div>
+      <div class="rule-text">First look forward. Striker, wide midfielders, and one central midfielder must react quickly. If the forward pass is on, play it. If not, secure the first pass and build again.</div>
+    </div>
+  </div>
+
+  <h3>The Safety Rule</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0;">
+    <div class="card" style="margin:0;text-align:center;padding:16px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:6px;">Game becomes chaotic</div>
+      <div style="font-family:var(--heading);font-weight:800;color:var(--navy);font-size:14px;">Recover into 4-5-1 mid-block</div>
+    </div>
+    <div class="card" style="margin:0;text-align:center;padding:16px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:6px;">Press is broken</div>
+      <div style="font-family:var(--heading);font-weight:800;color:var(--navy);font-size:14px;">Recover into 4-5-1 mid-block</div>
+    </div>
+    <div class="card" style="margin:0;text-align:center;padding:16px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:6px;">Players are unsure</div>
+      <div style="font-family:var(--heading);font-weight:800;color:var(--navy);font-size:14px;">Recover into 4-5-1 mid-block</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 1. FORMATION OVERVIEW ════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 1</div>
+    <h2>Formation Overview</h2>
+    <p>What it is, when to use it, and what to watch out for</p>
+  </div>
+
+  <p>The 4-5-1 is a formation built around midfield control, defensive protection, and compact team shape. The midfield five is the key part of the system — it allows the team to protect central areas, stop the opposition from playing easily through midfield, protect fullbacks, screen the back four, win second balls, and help the striker when the ball is won. A good 4-5-1 is about controlling where the opponent can play, winning the ball in useful areas, and attacking quickly with support.</p>
+
+  <h3>Best For</h3>
+  <ul>
+    <li>One reliable striker</li>
+    <li>Hard-working wide midfielders</li>
+    <li>A strong central midfield group</li>
+    <li>A team that needs better defensive structure</li>
+    <li>A team that concedes too many counterattacks</li>
+    <li>A team that gets played through midfield</li>
+    <li>A team playing against stronger opposition</li>
+    <li>A coach who wants compactness and clarity</li>
+    <li>A team that wants to counterattack with purpose</li>
+    <li>Players who can follow clear defensive roles</li>
+    <li>Midfielders who can support the striker quickly</li>
+  </ul>
+
+  <h3>Avoid If</h3>
+  <ul>
+    <li>Your striker cannot hold the ball or run in behind</li>
+    <li>Your wide midfielders do not work hard</li>
+    <li>Your central midfielders do not support attacks</li>
+    <li>Your team becomes too passive when defending</li>
+    <li>You need two strikers on the pitch</li>
+    <li>You do not have players who can transition quickly</li>
+    <li>Your team lacks patience and discipline</li>
+    <li>Your players do not understand compact distances</li>
+    <li>Your team struggles to get forward support</li>
+  </ul>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
+    <div class="card">
+      <div class="card-title">Main Strengths</div>
+      <ul>
+        <li>Strong midfield protection</li>
+        <li>Natural defensive compactness</li>
+        <li>Clear wide-area cover</li>
+        <li>Good protection for the back four</li>
+        <li>Strong against possession teams</li>
+        <li>Simple recovery shape</li>
+        <li>Good counterattacking potential</li>
+        <li>Ability to frustrate opponents</li>
+        <li>A platform to attack with runners</li>
+        <li>A clear defensive identity</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Main Risks</div>
+      <ul>
+        <li>Striker becomes isolated</li>
+        <li>Team becomes too deep</li>
+        <li>Midfield line becomes passive</li>
+        <li>Wide players fail to support attacks</li>
+        <li>CMs stay too safe</li>
+        <li>Team struggles to create chances</li>
+        <li>Possession cleared forward without support</li>
+        <li>Counterattacks lack numbers</li>
+        <li>Team defends too long without pressure</li>
+        <li>Shape becomes flat 4-5-1 with no threat</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2. DEFAULT SHAPE ══════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 2</div>
+    <h2>Default Shape</h2>
+    <p>The starting structure, unit relationships, and key distances</p>
+  </div>
+
+  <p>The default 4-5-1: 1 goalkeeper · 2 center backs · 2 fullbacks · 1 holding midfielder · 2 central midfielders · 2 wide midfielders · 1 striker. The three central midfielders protect the middle. The wide midfielders protect the fullbacks. The striker gives the team depth and pressing direction. This shape is easy to understand — but it must not become passive.</p>
+
+  <h3>Unit Relationships</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;">
+    <div class="card">
+      <div class="card-title">Defensive Unit</div>
+      <p style="font-size:13px;margin:0;">GK, CBs, fullbacks. Defend the goal, stay connected, build attacks, and communicate constantly with the midfield line.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Central Midfield Unit</div>
+      <p style="font-size:13px;margin:0;">3 CMs. Protect central areas, support possession, win second balls, screen passes, and support the striker when the ball is won.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Wide Midfield Unit</div>
+      <p style="font-size:13px;margin:0;">2 wide midfielders. Protect fullbacks, provide width, press wide areas, support counterattacks, and recover quickly. Two-way players — not luxury attackers.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Forward Unit</div>
+      <p style="font-size:13px;margin:0;">The striker. Provide depth, hold the ball, run behind, lead the press, occupy CBs, and give the team an outlet. The team must work for the striker.</p>
+    </div>
+  </div>
+
+  <h3>Key Distances</h3>
+  <p>The 4-5-1 only works if the distances are right. The back four must stay connected to the midfield five. The midfield five must stay connected to the striker. The striker must not be 30 yards away from everyone else. The wide midfielders must not drop so deep that the team becomes a back six. The central midfielders must not all sit on top of the back four.</p>
+
+  <div class="callout">
+    <div class="callout-title">Compact but Ready</div>
+    <p>A good 4-5-1 is compact but ready to attack. A poor 4-5-1 is compact but trapped. The aim is not just to survive — the aim is to win the ball and have a plan for what happens next.</p>
+  </div>
+
+  <h3>Default Shape Coaching Points</h3>
+  <ul>
+    <li>Back four stay connected</li>
+    <li>Midfield five protect the middle and wide areas</li>
+    <li>Striker stays connected enough to receive support</li>
+    <li>Wide midfielders recover but must also attack</li>
+    <li>Central midfielders screen, shift, and support</li>
+    <li>The team must not become too deep</li>
+    <li>The shape must move together</li>
+    <li>When unsure, recover into the 4-5-1 mid-block</li>
+  </ul>
+</div>
+
+<!-- ═══ 3. ATTACKING SHAPE ════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 3</div>
+    <h2>Attacking Shape</h2>
+    <p>From 4-5-1 to 3-2-5 — and the fast 4-3-3 transition</p>
+  </div>
+
+  <p>The 4-5-1 can attack effectively if support arrives quickly. The main attacking problem is obvious: there is only one striker. So the team must solve this by using wide midfielders running forward, central midfielders breaking beyond, fullbacks supporting at the right time, the striker linking play, quick forward passes after regaining possession, and controlled support underneath the attack. The striker cannot be left alone. The midfield must become brave when the ball is won.</p>
+
+  <h3>From 4-5-1 to 3-2-5 (Recommended)</h3>
+  <p>One fullback steps higher · opposite stays deeper · two CBs and deeper fullback form a back three · two midfielders stay underneath · one CM joins forward · wide midfielders push higher · striker stays central. This gives three players behind the ball, two players underneath, and five attacking threats.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;">
+    <div class="card">
+      <div class="card-title">Right Fullback Steps High</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"><strong>Back Three:</strong> LB · LCB · RCB</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"><strong>Midfield Two:</strong> Hold CM · Left CM</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:0;"><strong>Front Five:</strong> LW · Adv CM · ST · RW · RB</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Left Fullback Steps High</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"><strong>Back Three:</strong> LCB · RCB · RB</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"><strong>Midfield Two:</strong> Hold CM · Right CM</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:0;"><strong>Front Five:</strong> LB · LW · ST · Adv CM · RW</p>
+    </div>
+  </div>
+
+  <h3>Alternative: 4-3-3 in Transition</h3>
+  <p>The simplest attacking picture — wide midfielders push higher to become wide forwards, striker stays central, three CMs support behind, fullbacks support carefully. Useful when attacking quickly after regaining possession — the wide midfielders run forward to create a front three. This directly solves the biggest 4-5-1 problem: striker isolation.</p>
+
+  <div class="rule-box">
+    <div class="rule-icon">⚠️</div>
+    <div>
+      <div class="rule-label">The Core Attacking Problem</div>
+      <div class="rule-text">The team should not attack with only the striker and hope. That is not a plan. Get five players contributing — width, depth, central support, far-post threat, edge-of-box support, and counter-pressing access.</div>
+    </div>
+  </div>
+
+  <h3>Attacking Principles</h3>
+  <ol>
+    <li><strong>Support the Striker Quickly</strong> — at least one wide midfielder and one CM must react when ball goes into the striker</li>
+    <li><strong>Use Wide Players as Outlets</strong> — they are key transition players; when ball is won, they should be ready to run forward</li>
+    <li><strong>One Midfielder Must Break Lines</strong> — one CM needs permission to support attacks; without this, no central threat</li>
+    <li><strong>Secure the First Pass</strong> — if the counterattack is not on, secure possession; do not clear back to the opponent</li>
+    <li><strong>Maintain Rest Defense</strong> — if one fullback goes, the other balances; if one CM breaks forward, two midfielders protect underneath</li>
+  </ol>
+
+  <div class="callout">
+    <div class="callout-title">Rest Defense Rule</div>
+    <p>Three players behind the attack · two midfielders underneath · holding midfielder protecting central areas · opposite fullback balancing. If ball is wide, far-side wide midfielder tucks in or attacks the back post depending on the moment.</p>
+  </div>
+
+  <h3>Attacking Coaching Points</h3>
+  <ul>
+    <li>Is the striker isolated?</li>
+    <li>Are wide midfielders supporting quickly?</li>
+    <li>Is one central midfielder joining the attack?</li>
+    <li>Are we creating width?</li>
+    <li>Are we getting enough players forward?</li>
+    <li>Are we keeping protection behind the ball?</li>
+    <li>Can we play forward quickly when we win it?</li>
+    <li>Can we secure possession if the counterattack is not on?</li>
+    <li>Are we attacking with purpose or just clearing the ball?</li>
+  </ul>
+</div>
+
+<!-- ═══ 4. DEFENSIVE SHAPE ════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 4</div>
+    <h2>Defensive Shape</h2>
+    <p>The 4-5-1 mid-block — compact, disciplined, and ready to press</p>
+  </div>
+
+  <p>The 4-5-1 is naturally strong out of possession. The midfield five can block passing lanes, shift across, protect fullbacks, and compete for second balls. It is especially useful against teams that overload midfield or dominate possession — it allows the team to stay compact, frustrate the opponent, and wait for the right moments to press.</p>
+
+  <div class="rule-box">
+    <div class="rule-icon">🛡️</div>
+    <div>
+      <div class="rule-label">What the 4-5-1 Protects</div>
+      <div class="rule-text">Central midfield · Wide channels · Space in front of back four · Passing lanes into dangerous players · Counterattack routes through the middle</div>
+    </div>
+  </div>
+
+  <h3>Defensive Priorities</h3>
+  <ol>
+    <li><strong>Protect the Middle</strong> — no easy passes into central midfield, the No10 space, or the striker's feet</li>
+    <li><strong>Force Play Wide</strong> — wide areas are easier to control; force wide then press on triggers</li>
+    <li><strong>Shift Together</strong> — if ball goes left, team shifts left; if ball switches, the team travels together</li>
+    <li><strong>Stay Connected to the Striker</strong> — midfield line must be close enough to support the press; striker must not be isolated defensively either</li>
+    <li><strong>Avoid Becoming Too Deep</strong> — defend compactly, but do not sit on the edge of your own box</li>
+  </ol>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;">
+    <div class="card">
+      <div class="card-title">Striker Responsibilities</div>
+      <ul>
+        <li>Lead the press · screen passes into midfield</li>
+        <li>Force play one way</li>
+        <li>Delay the opposition build-up</li>
+        <li>Be available as the outlet when possession is won</li>
+        <li>Communicate pressing direction</li>
+      </ul>
+      <p style="font-size:12px;color:var(--text-mid);margin:8px 0 0;">Must press with intelligence, not chase everything.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Wide Midfielder Responsibilities</div>
+      <ul>
+        <li>Protect fullbacks · press opposition fullbacks</li>
+        <li>Stop easy wide progression</li>
+        <li>Track runners · tuck inside on far side</li>
+        <li>Be ready to counterattack</li>
+      </ul>
+      <p style="font-size:12px;color:#c0392b;font-weight:600;margin:8px 0 0;">⚠ Recovery runs are non-negotiable.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Central Midfielder Responsibilities</div>
+      <ul>
+        <li>Screen passes into dangerous areas</li>
+        <li>Shift across together</li>
+        <li>Track runners · win second balls</li>
+        <li>Stop central overloads</li>
+        <li>Support the striker when pressing</li>
+      </ul>
+      <p style="font-size:12px;color:#c0392b;font-weight:600;margin:8px 0 0;">⚠ Do not all chase the ball. One presses, the others protect.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Back Four Responsibilities</div>
+      <ul>
+        <li>Stay connected to the midfield five</li>
+        <li>Defend central spaces · stop crosses</li>
+        <li>Track runners · communicate constantly</li>
+        <li>Avoid dropping too deep too early</li>
+      </ul>
+      <p style="font-size:12px;color:#c0392b;font-weight:600;margin:8px 0 0;">⚠ If back four and midfield both drop too deep, the team becomes trapped.</p>
+    </div>
+  </div>
+
+  <!-- Holding midfielder feature -->
+  <div class="anchor-card">
+    <div class="role-name">⚙️ Holding Midfielder — Central Security <span class="role-tag">DM</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+      <div>
+        <h4>Defensive Role</h4>
+        <ul>
+          <li>Screen central passes</li>
+          <li>Protect the back four</li>
+          <li>Track runners · stop counterattacks</li>
+          <li>Stay central · avoid chasing wide</li>
+          <li>Communicate constantly</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Attacking Role</h4>
+        <ul>
+          <li>Receive from defenders</li>
+          <li>Support underneath the ball</li>
+          <li>Switch play · control tempo</li>
+          <li>Protect central space while team attacks</li>
+          <li>Stay connected behind the attack</li>
+        </ul>
+      </div>
+    </div>
+    <p>This player gives the 4-5-1 its central security. A good holding midfielder makes the whole team feel protected.</p>
+  </div>
+
+  <h3>Pressing Triggers</h3>
+  <p>Press when: poor touch · ball travels backwards · ball played wide · opposition fullback near the sideline · opponent receives facing their own goal · slow or under-hit pass · opponent plays into a crowded area · goalkeeper receives under pressure. The striker starts the press. The nearest midfielder supports. The midfield line shifts behind. The back four squeeze when safe.</p>
+
+  <h3>Defensive Coaching Points</h3>
+  <ul>
+    <li>Are we protecting the middle?</li>
+    <li>Is the striker screening passes?</li>
+    <li>Are the midfield five connected?</li>
+    <li>Are wide players protecting fullbacks?</li>
+    <li>Are CMs shifting together?</li>
+    <li>Are we forcing play wide?</li>
+    <li>Are we pressing on triggers?</li>
+    <li>Are we too deep?</li>
+    <li>Are we recovering into shape when the press is broken?</li>
+  </ul>
+</div>
+
+<!-- ═══ 5. TRANSITIONS ════════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 5</div>
+    <h2>Transitions</h2>
+    <p>React immediately when possession changes — attack with purpose when the ball is won</p>
+  </div>
+
+  <p>Transitions are crucial in the 4-5-1. The formation gives excellent defensive structure, but the team must be ready to attack quickly when the ball is won. The biggest danger is that the team wins the ball and has nobody supporting the striker — that turns every regain into a clearance. A good 4-5-1 must have clear transition rules: when we lose it, we react immediately. When we win it, we support the striker quickly.</p>
+
+  <h3>Defensive Transition — When We Lose the Ball</h3>
+
+  <div class="rule-box">
+    <div class="rule-icon">⚡</div>
+    <div>
+      <div class="rule-label">The Counter-Press Rule</div>
+      <div class="rule-text">Counter-press for 6–8 seconds if close enough. Nearest players try to win it back or stop the forward pass. If ball cannot be won quickly, recover into the 4-5-1 mid-block. Protect the middle first.</div>
+    </div>
+  </div>
+
+  <h4>Defensive Transition Priorities</h4>
+  <ol>
+    <li><strong>Nearest player presses</strong> — stop the opponent playing forward</li>
+    <li><strong>Second player covers</strong> — supports and blocks the next pass</li>
+    <li><strong>Central midfield protects</strong> — protect the middle immediately</li>
+    <li><strong>Wide players recover</strong> — react quickly if ball lost in wide areas</li>
+    <li><strong>Recover if ball escapes</strong> — recover into the 4-5-1 mid-block</li>
+  </ol>
+
+  <div class="callout">
+    <div class="callout-title">The 6–8 Second Rule</div>
+    <p><strong>Press if:</strong> ball is loose · poor touch · players are close · opponent near sideline · opponent facing own goal · passing options limited.</p>
+    <p style="margin:0;"><strong>Recover if:</strong> opponent has clear control · players too far · press would leave central spaces open · opponent can easily play forward · team is unbalanced. Intensity with discipline.</p>
+  </div>
+
+  <h3>Attacking Transition — When We Win the Ball</h3>
+  <p>First thought: <strong>Can we play forward?</strong> But the support must arrive quickly. The ball can be played into the striker's feet, into space behind the defense, into wide midfielders running forward, into a CM breaking forward, or into the holding midfielder to secure possession. The team must avoid the lazy clearance — the first pass after winning possession matters.</p>
+
+  <h4>Attacking Transition Priorities</h4>
+  <ul>
+    <li>First look forward</li>
+    <li>Striker provides depth or shows to feet</li>
+    <li>Wide midfielders run quickly</li>
+    <li>One CM supports the striker</li>
+    <li>One CM supports underneath</li>
+    <li>Holding midfielder protects central space</li>
+    <li>Fullbacks support carefully</li>
+    <li>Secure possession if forward is not on</li>
+  </ul>
+
+  <h3>Transition Coaching Points</h3>
+  <ul>
+    <li>Do we react immediately when the ball is lost?</li>
+    <li>Are we close enough to counter-press?</li>
+    <li>Are we stopping the opponent's first forward pass?</li>
+    <li>Are midfielders protecting central areas?</li>
+    <li>Are we recovering if the press is broken?</li>
+    <li>When we win it, do we look forward?</li>
+    <li>Is the striker supported quickly?</li>
+    <li>Are wide players running forward?</li>
+    <li>Are we clearing the ball or attacking with purpose?</li>
+  </ul>
+</div>
+
+<!-- ═══ 6. KEY PLAYER ROLES ══════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 6</div>
+    <h2>Key Player Roles</h2>
+    <p>All seven positions across all phases of play</p>
+  </div>
+
+  <div class="role-grid">
+    <div class="role-card">
+      <div class="role-name">🥅 Goalkeeper <span class="role-tag">GK</span></div>
+      <h4>In Possession</h4>
+      <ul>
+        <li>Support the build-up · play into CBs or fullbacks</li>
+        <li>Recognize when to play longer into striker</li>
+        <li>Help switch play · stay calm under pressure</li>
+        <li>Help the team secure possession</li>
+      </ul>
+      <h4>Out of Possession</h4>
+      <ul>
+        <li>Organize the back four</li>
+        <li>Manage space behind the defense</li>
+        <li>Command the box</li>
+        <li>Be ready for crosses and direct balls</li>
+      </ul>
+    </div>
+
+    <div class="role-card">
+      <div class="role-name">🛡️ Center Backs <span class="role-tag">CB</span></div>
+      <h4>In Possession</h4>
+      <ul>
+        <li>Split to receive · play into central midfield</li>
+        <li>Switch play · find fullbacks</li>
+        <li>Play into striker when needed</li>
+        <li>Stay connected when fullback attacks</li>
+      </ul>
+      <h4>Out of Possession</h4>
+      <ul>
+        <li>Stay compact · defend central spaces</li>
+        <li>Track runners · control defensive line</li>
+        <li>Defend crosses · win first contact</li>
+        <li>Avoid dropping too deep early</li>
+      </ul>
+    </div>
+
+    <div class="role-card">
+      <div class="role-name">🏃 Fullbacks <span class="role-tag">FB</span></div>
+      <h4>In Possession</h4>
+      <ul>
+        <li>Support wide attacks · overlap</li>
+        <li>Stay deeper to create rest defense</li>
+        <li>Help switch play · underlap if space opens</li>
+        <li>Join the attacking five when safe</li>
+      </ul>
+      <h4>Out of Possession</h4>
+      <ul>
+        <li>Defend wide areas · stop crosses</li>
+        <li>Stay connected to CBs</li>
+        <li>Tuck in when ball on opposite side</li>
+        <li>Track runners</li>
+      </ul>
+      <p style="font-size:12px;color:#c0392b;font-weight:600;margin:8px 0 0;">⚠ One fullback balances when the other attacks.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-name">⚡ Central Midfielders <span class="role-tag">CM</span></div>
+      <h4>In Possession</h4>
+      <ul>
+        <li>Support the striker · connect with wide players</li>
+        <li>Make forward runs · arrive around the box</li>
+        <li>Help create the attacking five</li>
+        <li>Win second balls</li>
+      </ul>
+      <h4>Out of Possession</h4>
+      <ul>
+        <li>Protect central areas · press opposition midfielders</li>
+        <li>Recover into the midfield line</li>
+        <li>Track runners · shift across together</li>
+        <li>Avoid both jumping forward at once</li>
+      </ul>
+    </div>
+
+    <div class="role-card">
+      <div class="role-name">✨ Wide Midfielders <span class="role-tag">WM</span></div>
+      <h4>In Possession</h4>
+      <ul>
+        <li>Provide width · attack 1v1</li>
+        <li>Run beyond the striker</li>
+        <li>Combine with fullbacks · attack far post</li>
+        <li>Move inside when fullback overlaps</li>
+      </ul>
+      <h4>Out of Possession</h4>
+      <ul>
+        <li>Recover into midfield · protect fullbacks</li>
+        <li>Press opposition fullbacks</li>
+        <li>Tuck in on far side · track runners</li>
+        <li>Ready to counterattack</li>
+      </ul>
+      <p style="font-size:12px;color:var(--text-mid);font-weight:600;margin:8px 0 0;">Hardest role — must defend AND attack. Discipline is non-negotiable.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-name">🎯 Striker <span class="role-tag">ST</span></div>
+      <h4>In Possession</h4>
+      <ul>
+        <li>Provide depth · hold the ball</li>
+        <li>Run behind · link play</li>
+        <li>Occupy CBs · attack crosses</li>
+        <li>Create space for midfield runners</li>
+      </ul>
+      <h4>Out of Possession</h4>
+      <ul>
+        <li>Lead the press · force play one way</li>
+        <li>Screen passes into midfield</li>
+        <li>Delay opposition build-up</li>
+        <li>Be ready as the outlet</li>
+      </ul>
+      <p style="font-size:12px;color:#c0392b;font-weight:600;margin:8px 0 0;">⚠ Lone striker role is demanding. The team must work for the striker.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 7. TRAINING ROUTINE ══════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 7</div>
+    <h2>Training Routine</h2>
+    <p>Five sessions — each one connected to how the team wants to play</p>
+  </div>
+
+  <p>Every session should connect to how the team wants to play on match day. The aim is compactness, central protection, attacking support, and transition clarity.</p>
+
+  <div class="session-card">
+    <div class="session-header">
+      <div class="session-num">Session 1</div>
+      <div class="session-title">Default Shape and Compact Midfield Line</div>
+    </div>
+    <div class="session-body">
+      <div class="session-label">Objective</div>
+      <p>Help players understand the 4-5-1 structure — especially the midfield five and distances between units.</p>
+      <div class="session-label">Setup</div>
+      <p>Half a field or two-thirds. Organize in 4-5-1. Start unopposed, then add passive opposition. Walk through: back four · holding CM · two CMs · two wide midfielders · striker · distances between back four, midfield five, and striker.</p>
+      <div class="session-label">Practice — Ball-Movement Triggers</div>
+      <ul>
+        <li>Ball with CB · Ball with fullback · Ball with holding CM</li>
+        <li>Ball with wide midfielder · Ball switched · Ball lost · Ball won</li>
+      </ul>
+      <div class="session-label">Coaching Points</div>
+      <ul>
+        <li>Stay compact · midfield five shift together</li>
+        <li>Wide midfielders protect fullbacks</li>
+        <li>CMs protect the middle · striker stays connected</li>
+        <li>Back four stay connected to midfield · do not become too deep</li>
+        <li>Shape must move with the ball</li>
+      </ul>
+      <div class="session-label">Progression</div>
+      <p>Add opposition pressure. Team must defend spaces, win the ball, and find the first forward pass.</p>
+      <div class="session-link">
+        <div class="session-link-label">Match-Day Link</div>
+        <p>This session helps the team understand the base structure and defensive compactness.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="session-card">
+    <div class="session-header">
+      <div class="session-num">Session 2</div>
+      <div class="session-title">Supporting the Lone Striker</div>
+    </div>
+    <div class="session-body">
+      <div class="session-label">Objective</div>
+      <p>Teach the team how to attack from the 4-5-1 without leaving the striker isolated.</p>
+      <div class="session-label">Setup</div>
+      <p>Half a field or two-thirds. Team starts in 4-5-1. Opposition: back four and midfield screen.</p>
+      <div class="session-label">Practice</div>
+      <p>Team builds or wins possession and tries to find the striker. When striker receives, support must arrive from: one wide midfielder, one CM, and one player underneath the ball. Striker can: set the ball back · play wide · spin behind · combine with midfield runners.</p>
+      <div class="session-label">Coaching Points</div>
+      <ul>
+        <li>Striker must not be left alone</li>
+        <li>Wide players must support quickly</li>
+        <li>One CM must break forward · one supports underneath</li>
+        <li>First pass after winning possession must be purposeful</li>
+        <li>Do not just clear the ball forward</li>
+      </ul>
+      <div class="session-label">Progression</div>
+      <p>A goal only counts if the striker is supported by at least two teammates in the attack.</p>
+      <div class="session-link">
+        <div class="session-link-label">Match-Day Link</div>
+        <p>This session fixes the biggest 4-5-1 problem: striker isolation.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="session-card">
+    <div class="session-header">
+      <div class="session-num">Session 3</div>
+      <div class="session-title">Defending in the 4-5-1 Mid-Block</div>
+    </div>
+    <div class="session-body">
+      <div class="session-label">Objective</div>
+      <p>Teach the team how to defend compactly in a 4-5-1 shape.</p>
+      <div class="session-label">Setup</div>
+      <p>Half to three-quarters of field. Defending team in 4-5-1. Opposition tries to build through midfield or wide areas.</p>
+      <div class="session-label">Coaching Points</div>
+      <ul>
+        <li>Striker screens central passes · midfield five stay connected</li>
+        <li>Wide midfielders protect fullbacks · CMs protect the middle</li>
+        <li>Back four stay connected · force play wide · press on triggers · do not drop too deep</li>
+      </ul>
+      <div class="session-label">Pressing Triggers</div>
+      <ul>
+        <li>Poor touch · ball backwards · ball played wide</li>
+        <li>Fullback near sideline · opponent facing own goal · slow/under-hit pass</li>
+      </ul>
+      <div class="session-label">Progression</div>
+      <p>Allow the defending team to counterattack after winning possession — connects defensive structure to attacking transition.</p>
+      <div class="session-link">
+        <div class="session-link-label">Match-Day Link</div>
+        <p>This session gives the team a strong, reliable defensive identity.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="session-card">
+    <div class="session-header">
+      <div class="session-num">Session 4</div>
+      <div class="session-title">Transitions and Counterattacking</div>
+    </div>
+    <div class="session-body">
+      <div class="session-label">Objective</div>
+      <p>Train the team's reaction when possession changes — focus on supporting the striker quickly.</p>
+      <div class="session-label">Setup</div>
+      <p>7v7, 8v8, or 9v9. Create lots of turnovers. Use neutral players if needed.</p>
+      <div class="session-label">Coaching Points — Defensive Transition</div>
+      <ul>
+        <li>Nearest player presses · second player covers</li>
+        <li>Protect the middle · wide players recover</li>
+        <li>Recover into shape if press fails</li>
+      </ul>
+      <div class="session-label">Coaching Points — Attacking Transition</div>
+      <ul>
+        <li>First look forward · striker gives an option · wide midfielders run</li>
+        <li>One CM supports striker · holding CM supports underneath</li>
+        <li>Secure possession if forward is not on</li>
+      </ul>
+      <div class="session-label">Progression — Bonus Points For:</div>
+      <ul>
+        <li>Winning ball back within 8 seconds</li>
+        <li>Finding the striker after regaining possession</li>
+        <li>Supporting the striker with two players</li>
+        <li>Scoring within 10 seconds of winning possession</li>
+        <li>Recovering into 4-5-1 after losing the ball</li>
+      </ul>
+      <div class="session-link">
+        <div class="session-link-label">Match-Day Link</div>
+        <p>This session helps the team become dangerous after winning the ball and secure after losing it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="session-card">
+    <div class="session-header">
+      <div class="session-num">Session 5</div>
+      <div class="session-title">Match-Day Preparation</div>
+    </div>
+    <div class="session-body">
+      <div class="session-label">Objective</div>
+      <p>Connect the 4-5-1 system to the next game.</p>
+      <div class="session-label">Setup — Walk Through</div>
+      <ul>
+        <li>Default 4-5-1 · Attacking 3-2-5 · Attacking transition 4-3-3</li>
+        <li>Defensive 4-5-1 mid-block · Counter-pressing after loss</li>
+        <li>Striker support after regain · Wide-area defending · Set-piece reminders</li>
+      </ul>
+      <div class="session-label">Practice Conditions (11v11, 10v10, or 9v9)</div>
+      <ul>
+        <li>Bonus goal for supporting the striker quickly</li>
+        <li>Bonus point for recovering into 4-5-1 after losing possession</li>
+        <li>Bonus point for winning ball back within 8 seconds</li>
+        <li>Bonus point for forcing play wide and winning it</li>
+        <li>Bonus point for using a wide runner in transition</li>
+      </ul>
+      <div class="session-link">
+        <div class="session-link-label">Match-Day Link</div>
+        <p>This session should leave players organized, confident, and clear on their roles.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 8. MATCH-DAY CHECKLIST ═══════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 8</div>
+    <h2>Match-Day Checklist</h2>
+    <p>Before the game · During the game · Half-time · After the game</p>
+  </div>
+
+  <h3>Before the Game — Ask Yourself</h3>
+  <ul class="checklist">
+    <li>Do players know the default 4-5-1 shape?</li>
+    <li>Do wide midfielders know their defensive role?</li>
+    <li>Do central midfielders know who supports and who protects?</li>
+    <li>Does the striker know how to lead the press?</li>
+    <li>Does the team know how to support the striker?</li>
+    <li>Do fullbacks know when to attack and when to stay?</li>
+    <li>Do players know the transition rules?</li>
+    <li>Do players know the pressing triggers?</li>
+    <li>Have I kept the message simple enough?</li>
+  </ul>
+
+  <h3>Team Talk — Keep It Simple</h3>
+  <div class="script-box">
+    <div class="script-label">Example Team Talk</div>
+    <div class="script-text">"We start in a 4-5-1 because it gives us protection, compactness, and control of midfield. We protect the middle, force them wide, and stay connected. When we win it, we do not just clear the ball. We look forward, support the striker quickly, and attack with purpose. When we lose it, we react for 6–8 seconds. If we cannot win it back, we recover into shape."</div>
+  </div>
+  <p>Players need clarity.</p>
+
+  <h3>During the Game — Watch the Team, Not Just the Ball</h3>
+  <ul class="checklist">
+    <li>Is the striker isolated?</li>
+    <li>Are wide midfielders recovering?</li>
+    <li>Are central midfielders protecting the middle?</li>
+    <li>Are we too deep?</li>
+    <li>Are we too passive?</li>
+    <li>Are we forcing play wide?</li>
+    <li>Are we pressing on triggers?</li>
+    <li>Are we supporting attacks quickly enough?</li>
+    <li>Are we counter-pressing together?</li>
+    <li>Are we recovering when the press is broken?</li>
+  </ul>
+
+  <h3>Half-Time — Use a Simple Structure</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;">
+    <div class="card">
+      <div class="card-title">1. What Is Working?</div>
+      <div class="script-text" style="font-size:13px;font-style:italic;">"We are compact and stopping them playing through midfield."</div>
+    </div>
+    <div class="card">
+      <div class="card-title">2. What Needs Fixing?</div>
+      <div class="script-text" style="font-size:13px;font-style:italic;">"When we win it, the striker is too isolated and our wide players are too slow to support."</div>
+    </div>
+    <div class="card">
+      <div class="card-title">3. The Clear Instruction</div>
+      <div class="script-text" style="font-size:13px;font-style:italic;">"When we regain the ball, the nearest wide player and one central midfielder must support the striker immediately."</div>
+    </div>
+    <div class="card">
+      <div class="card-title">4. The Belief Message</div>
+      <div class="script-text" style="font-size:13px;font-style:italic;">"The structure is working. Stay disciplined, support quicker, and we will create better counterattacks."</div>
+    </div>
+  </div>
+
+  <h3>After the Game — Review</h3>
+  <ul class="checklist">
+    <li>Did the 4-5-1 suit the team?</li>
+    <li>Did the midfield five protect us?</li>
+    <li>Did the striker receive enough support?</li>
+    <li>Did wide players recover and attack?</li>
+    <li>Did the defensive shape work?</li>
+    <li>Did transitions work?</li>
+    <li>Were we too passive?</li>
+    <li>Did we create enough chances?</li>
+    <li>What problem repeated?</li>
+    <li>What should we train next?</li>
+  </ul>
+
+  <div class="callout">
+    <div class="callout-title">The Review Rule</div>
+    <p>Turn the biggest problem into next week's training topic.</p>
+  </div>
+</div>
+
+<!-- ═══ 9. COMMON PROBLEMS AND FIXES ════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 9</div>
+    <h2>Common Problems and Fixes</h2>
+    <p>Seven recurring problems with practical solutions</p>
+  </div>
+
+  <div class="problem-card">
+    <div class="problem-header"><span class="problem-num">1</span><span class="problem-title">The Striker Becomes Isolated</span></div>
+    <div class="problem-body">
+      <div class="problem-section-title">Why It Happens</div>
+      <ul><li>Wide players do not support quickly · CMs stay too deep · team clears forward · striker receives with no support · fullbacks do not support</li></ul>
+      <div class="problem-section-title">Fix</div>
+      <ul><li>One CM must support the striker · wide midfielders run forward quickly · use striker as a link player · secure the first pass if support is not ready · encourage one wide player to attack inside</li></ul>
+      <div class="quote">"The striker cannot fight alone. When we win it, support must arrive immediately."</div>
+    </div>
+  </div>
+
+  <div class="problem-card">
+    <div class="problem-header"><span class="problem-num">2</span><span class="problem-title">The Team Becomes Too Passive</span></div>
+    <div class="problem-body">
+      <div class="problem-section-title">Why It Happens</div>
+      <ul><li>Players only think about defending · midfield drops too deep · striker stops pressing · wide players become fullbacks · nobody supports attacks</li></ul>
+      <div class="problem-section-title">Fix</div>
+      <ul><li>Press on clear triggers · keep midfield line higher · support striker quicker · use wide players as counterattacking outlets · remind players the system is compact, not negative</li></ul>
+      <div class="quote">"Compact does not mean passive. We defend with structure, then attack with purpose."</div>
+    </div>
+  </div>
+
+  <div class="problem-card">
+    <div class="problem-header"><span class="problem-num">3</span><span class="problem-title">Wide Players Do Not Recover</span></div>
+    <div class="problem-body">
+      <div class="problem-section-title">Why It Happens</div>
+      <ul><li>Wide players think only about attacking · fullbacks become exposed · midfield line loses shape · opposition creates wide overloads</li></ul>
+      <div class="problem-section-title">Fix</div>
+      <ul><li>Make recovery runs non-negotiable · train the midfield five shape · show wide players their defensive starting position · use pressing triggers in wide areas · reward defensive work</li></ul>
+      <div class="quote">"When we do not have the ball, you are part of the midfield five. Recover first, then attack."</div>
+    </div>
+  </div>
+
+  <div class="problem-card">
+    <div class="problem-header"><span class="problem-num">4</span><span class="problem-title">The Team Cannot Create Chances</span></div>
+    <div class="problem-body">
+      <div class="problem-section-title">Why It Happens</div>
+      <ul><li>Striker isolated · midfield too deep · wide players do not run forward · fullbacks stay too cautious · team clears instead of building</li></ul>
+      <div class="problem-section-title">Fix</div>
+      <ul><li>Push one CM higher · wide players attack on regain · allow one fullback to support · use striker as a link · get five players contributing to attack</li></ul>
+      <div class="quote">"We have the protection. Now we need the support. When we attack, we need runners around the striker."</div>
+    </div>
+  </div>
+
+  <div class="problem-card">
+    <div class="problem-header"><span class="problem-num">5</span><span class="problem-title">Central Midfielders Stay Too Flat</span></div>
+    <div class="problem-body">
+      <div class="problem-section-title">Why It Happens</div>
+      <ul><li>All three midfielders sit on the same line · nobody supports the striker · passing lanes blocked · team lacks forward runners</li></ul>
+      <div class="problem-section-title">Fix</div>
+      <p>Stagger the midfield three: one holds · one supports underneath · one breaks forward. Rotate roles clearly.</p>
+      <div class="quote">"Do not stand on the same line. One holds, one connects, one supports the attack."</div>
+    </div>
+  </div>
+
+  <div class="problem-card">
+    <div class="problem-header"><span class="problem-num">6</span><span class="problem-title">The Team Still Gets Played Through</span></div>
+    <div class="problem-body">
+      <div class="problem-section-title">Why It Happens</div>
+      <ul><li>Midfield five too stretched · striker does not screen passes · CMs chase the ball · wide players too high · back four and midfield disconnected</li></ul>
+      <div class="problem-section-title">Fix</div>
+      <ul><li>Reduce distances between units · striker screens central passes · midfield five shift together · protect the middle first · recover into compact shape</li></ul>
+      <div class="quote">"Our strength is compactness. Stay connected and make them play around us, not through us."</div>
+    </div>
+  </div>
+
+  <div class="problem-card">
+    <div class="problem-header"><span class="problem-num">7</span><span class="problem-title">The Team Gets Counterattacked</span></div>
+    <div class="problem-body">
+      <div class="problem-section-title">Why It Happens</div>
+      <ul><li>Both fullbacks attack · too many midfielders run forward · holding midfielder leaves central space · counter-press is slow · rest defense is poor</li></ul>
+      <div class="problem-section-title">Fix</div>
+      <ul><li>One fullback attacks, one balances · one CM joins, two protect · holding midfielder stays central · counter-press for 6–8 seconds · recover into 4-5-1 if press fails</li></ul>
+      <div class="quote">"When we attack, our rest defense protects us before the counterattack happens."</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 10. COACH SCRIPTS ══════════════════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 10</div>
+    <h2>Coach Scripts</h2>
+    <p>Simple explanations you can use with your players — word for word if needed</p>
+  </div>
+
+  <div class="script-box">
+    <div class="script-label">Explaining the System</div>
+    <div class="script-text">"We start in a 4-5-1 because it gives us compactness, midfield protection, and a clear shape. We are hard to play through, but we are not just sitting back. When we win it, we attack with purpose."</div>
+  </div>
+
+  <div class="script-box">
+    <div class="script-label">Explaining the Attacking Shape</div>
+    <div class="script-text">"When we attack, we must support the striker. The wide players push forward, one midfielder joins, and we keep protection underneath. We can build into a 3-2-5, but we must keep rest defense."</div>
+  </div>
+
+  <div class="script-box">
+    <div class="script-label">Explaining the Defensive Shape</div>
+    <div class="script-text">"When we do not have the ball, we recover into a compact 4-5-1 mid-block. We protect the middle, force play wide, and press on clear triggers."</div>
+  </div>
+
+  <div class="script-box">
+    <div class="script-label">Explaining Transitions</div>
+    <div class="script-text">"When we lose the ball, we react for 6–8 seconds if we are close enough. If we cannot win it back, we recover into shape. When we win it, we look forward and support the striker quickly."</div>
+  </div>
+
+  <div class="script-box">
+    <div class="script-label">Explaining Rest Defense</div>
+    <div class="script-text">"When we attack, we still need protection. If one fullback goes, the other balances. If one midfielder joins, two stay connected underneath."</div>
+  </div>
+
+  <div class="script-box">
+    <div class="script-label">Explaining Player Responsibility</div>
+    <div class="script-text">"Your position gives us the shape. Your role changes depending on whether we have the ball, do not have the ball, have just won it, or have just lost it."</div>
+  </div>
+</div>
+
+<!-- ═══ 11. PRINTABLE PLAYER HANDOUT ══════════════════════ -->
+<div class="section-page">
+  <div class="section-heading">
+    <div class="section-label">Section 11 — Printable</div>
+    <h2>Player Handout</h2>
+    <p>Print this page and give one to each player — our team system on one page</p>
+  </div>
+
+  <div class="handout">
+    <div class="handout-title">Our 4-5-1 Team System</div>
+    <div class="handout-sub">Team Tactical Blueprint — Season Reference Card</div>
+
+    <div class="handout-grid">
+      <div class="handout-block">
+        <h4>⬛ Default Shape</h4>
+        <p style="font-size:13px;margin-bottom:8px;">We start in a 4-5-1:</p>
+        <ul>
+          <li>Back four</li>
+          <li>Five midfielders</li>
+          <li>One striker</li>
+          <li>Strong midfield protection</li>
+          <li>Clear defensive compactness</li>
+        </ul>
+      </div>
+
+      <div class="handout-block">
+        <h4>⚡ Attacking Shape (3-2-5 / 4-3-3)</h4>
+        <p style="font-size:13px;margin-bottom:8px;">When we have controlled possession:</p>
+        <ul>
+          <li>Support the striker</li>
+          <li>Create width</li>
+          <li>Use midfield runners</li>
+          <li>Get wide players forward</li>
+          <li>Keep protection underneath</li>
+          <li>Attack with purpose</li>
+        </ul>
+      </div>
+
+      <div class="handout-block">
+        <h4>🛡️ Defensive Shape (Mid-Block)</h4>
+        <p style="font-size:13px;margin-bottom:8px;">When out of possession:</p>
+        <ul>
+          <li>Protect the middle</li>
+          <li>Force play wide</li>
+          <li>Stay compact · shift together</li>
+          <li>Press on triggers</li>
+          <li>Recover together</li>
+        </ul>
+      </div>
+
+      <div class="handout-block">
+        <h4>↔ Transitions</h4>
+        <p style="font-size:13px;margin-bottom:8px;"><strong>Lose the ball:</strong> Counter-press 6–8 seconds. Cannot win back → recover into 4-5-1 mid-block.</p>
+        <p style="font-size:13px;margin:0;"><strong>Win the ball:</strong> Look forward. Find striker or wide runners if on. If not → secure first pass and build.</p>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--navy);margin:20px 0 10px;">My Role in the System</h3>
+    <table class="role-table">
+      <thead>
+        <tr><th>Position</th><th>Key Responsibility</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="role-col">Goalkeeper</td><td>Start attacks, communicate, and organize the back four.</td></tr>
+        <tr><td class="role-col">Center Backs</td><td>Stay connected, defend central spaces, and play forward when possible.</td></tr>
+        <tr><td class="role-col">Fullbacks</td><td>Defend wide areas, support attacks at the right time, and balance when the opposite fullback attacks.</td></tr>
+        <tr><td class="role-col">Holding Midfielder</td><td>Protect the middle, support the build-up, and stop counterattacks.</td></tr>
+        <tr><td class="role-col">Central Midfielders</td><td>Support the striker, press with energy, recover quickly, and protect the middle.</td></tr>
+        <tr><td class="role-col">Wide Midfielders</td><td>Recover into the midfield five, protect fullbacks, provide width, and attack quickly when we win it.</td></tr>
+        <tr><td class="role-col">Striker</td><td>Provide depth, hold the ball, link play, finish attacks, and lead the press.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="non-negotiables">
+      <h4>Our Non-Negotiables</h4>
+      <ul>
+        <li>Protect the middle first</li>
+        <li>Stay connected as a team</li>
+        <li>Wide players recover</li>
+        <li>Support the striker quickly</li>
+        <li>One midfielder joins, two protect</li>
+        <li>If one fullback attacks, the other balances</li>
+        <li>React quickly when possession changes</li>
+        <li>If we cannot press, recover into shape</li>
+        <li>Compact does not mean passive</li>
+        <li>The formation is the starting point — the team shape changes with the game</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FINAL COACHING MESSAGE ════════════════════════════ -->
+<div class="section-page">
+  <div class="final-message">
+    <h2>Final Coaching Message</h2>
+
+    <p>The 4-5-1 is not a negative formation. It becomes negative only when the team has no plan after winning the ball. A good 4-5-1 gives your team structure, compactness, and protection. It helps stop opponents playing through midfield. It protects the back four. It gives wide players clear defensive jobs. It gives midfielders a strong shape. It gives the team a safe structure to recover into.</p>
+
+    <p>But it must still attack with purpose. The striker must be supported. Wide players must run forward. Midfielders must break lines. The team must know when to press, when to recover, when to play forward, and when to secure possession.</p>
+
+    <p>The 4-5-1 works when the players understand:</p>
+
+    <div class="final-principles">
+      <div class="final-principle">How we start</div>
+      <div class="final-principle">How we attack</div>
+      <div class="final-principle">How we defend</div>
+      <div class="final-principle">How we protect the middle</div>
+      <div class="final-principle">How we support the striker</div>
+      <div class="final-principle">How we react when we lose the ball</div>
+      <div class="final-principle">How we react when we win the ball</div>
+    </div>
+
+    <p style="margin-top:16px;opacity:0.9;"><strong style="color:hsl(152,70%,65%);">Start with compactness.</strong><br>
+    Build the midfield protection.<br>
+    Train the transition runs.<br>
+    Support the striker.<br>
+    Repeat the principles.<br>
+    Review the game.<br>
+    Improve one problem at a time.</p>
+    <p>That is how the 4-5-1 becomes more than a defensive shape. That is how it becomes a disciplined, dangerous team identity.</p>
+
+    <div class="final-brand">Soccer Formation Finder | Complete 4-5-1 Implementation Guide | Created by Paul Mountford</div>
+  </div>
+</div>
+
+</body>
+</html>

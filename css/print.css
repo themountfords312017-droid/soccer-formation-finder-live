@@ -1,0 +1,148 @@
+/* Print-optimized stylesheet */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Inter', sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    padding: 0;
+    margin: 0;
+  }
+
+  header, footer, nav, button, .btn, .results-action-bar, .cta-section, .modal-overlay, #site-header, #site-footer {
+    display: none !important;
+  }
+
+  .container, .results-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* Force white cards with dark borders/text for printing */
+  .card, .role-card, .game-model-phase, .training-topic {
+    background: #fff !important;
+    color: #000 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    margin-bottom: 15px !important;
+    page-break-inside: avoid;
+    padding: 12px !important;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #000 !important;
+    page-break-after: avoid;
+    margin-top: 15px !important;
+    margin-bottom: 8px !important;
+  }
+
+  h1 { font-size: 24pt; }
+  h2 { font-size: 18pt; border-bottom: 1px solid #000; padding-bottom: 3px; }
+  h3 { font-size: 14pt; }
+  h4 { font-size: 12pt; }
+
+  p, li {
+    color: #333 !important;
+  }
+
+  /* SVG Diagrams */
+  svg {
+    max-width: 200px !important;
+    height: auto !important;
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    margin: 10px auto !important;
+    display: block !important;
+  }
+  
+  rect {
+    fill: #f0f0f0 !important;
+    stroke: #aaa !important;
+  }
+  
+  circle {
+    fill: #fff !important;
+    stroke: #000 !important;
+  }
+  
+  text {
+    fill: #000 !important;
+  }
+
+  .results-header-card {
+    grid-template-columns: 3fr 1fr !important;
+    background: #fff !important;
+    color: #000 !important;
+    border: 2px solid #000 !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    page-break-after: avoid;
+  }
+
+  .results-header-card::before, .results-header-card::after {
+    display: none !important;
+  }
+
+  .result-formation-name {
+    color: #000 !important;
+    font-size: 36pt !important;
+  }
+
+  .score-ring-circle-bg {
+    stroke: #eee !important;
+  }
+
+  .score-ring-circle-fill {
+    stroke: #000 !important;
+  }
+
+  .score-ring-text {
+    fill: #000 !important;
+    color: #000 !important;
+  }
+
+  /* Grid Layouts */
+  .grid-2, .grid-3, .grid-4, .role-grid, .game-model-grid {
+    display: block !important;
+  }
+
+  .role-card, .game-model-phase {
+    width: 100% !important;
+    float: none !important;
+  }
+
+  /* Page breaks */
+  .result-section {
+    page-break-before: always;
+  }
+
+  .result-section:first-of-type {
+    page-break-before: avoid;
+  }
+
+  /* Append link URLs after links for reference in printout */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 90%;
+    color: #555;
+  }
+
+  /* Ensure all tab panels print sequentially */
+  .results-tab-content {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    page-break-before: always;
+  }
+  
+  .results-tabs {
+    display: none !important;
+  }
+}
